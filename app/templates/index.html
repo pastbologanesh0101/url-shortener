@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>URL Shortener</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 1.6rem; }
+    form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    input[type=text] { flex: 1; padding: 8px; font-size: 1rem; }
+    button { padding: 8px 16px; font-size: 1rem; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; font-size: 0.9rem; }
+    #result { margin-bottom: 16px; font-size: 0.9rem; }
+    .error { color: #b00020; }
+    .success { color: #0a7d2c; }
+  </style>
+</head>
+<body>
+  <h1>URL Shortener</h1>
+  <form id="shorten-form">
+    <input type="text" id="long_url" name="long_url" placeholder="https://example.com/some/long/path" required>
+    <input type="text" id="custom_alias" name="custom_alias" placeholder="custom alias (optional)">
+    <button type="submit">Shorten</button>
+  </form>
+  <div id="result"></div>
+
+  <h2>All Links</h2>
+  <table>
+    <thead>
+      <tr><th>Short Code</th><th>Long URL</th><th>Created</th><th>Clicks</th></tr>
+    </thead>
+    <tbody>
+      {% for link in links %}
+      <tr>
+        <td><a href="/{{ link.short_code }}">/{{ link.short_code }}</a></td>
+        <td>{{ link.long_url }}</td>
+        <td>{{ link.created_at }}</td>
+        <td>{{ link.click_count }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4">No links yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+    document.getElementById('shorten-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const long_url = document.getElementById('long_url').value;
+      const custom_alias = document.getElementById('custom_alias').value;
+      const resultDiv = document.getElementById('result');
+      try {
+        const resp = await fetch('/api/links', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ long_url, custom_alias })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          resultDiv.innerHTML = `<span class="error">${data.error}</span>`;
+        } else {
+          resultDiv.innerHTML = `<span class="success">Created: <a href="/${data.short_code}">${data.short_url}</a></span>`;
+          setTimeout(() => window.location.reload(), 800);
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `<span class="error">Request failed: ${err}</span>`;
+      }
+    });
+  </script>
+</body>
+</html>
